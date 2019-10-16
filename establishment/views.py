@@ -16,6 +16,7 @@ class EstablishmentViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = (AllowAny,)
 
+    # Fórmula para calcular a distancia entre dois pontos
     @staticmethod
     def haversine(lat1, lon1, lat2, lon2):
         lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
@@ -24,6 +25,7 @@ class EstablishmentViewSet(viewsets.ModelViewSet):
         a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
         return 2 * 6371 * asin(sqrt(a))
 
+    # API para pegar os estabelecimentos pela distância do usuário
     @action(methods=["post"], detail=False, permission_classes=[AllowAny, ])
     def order_establishment_by_distance(self, request):
         lat = request.data['lat']
@@ -31,9 +33,12 @@ class EstablishmentViewSet(viewsets.ModelViewSet):
         if not lat or not lon:
             return Response({'status': 'error'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Pegar todos os estabelecimentos cadastrados no Admin
         establishment_list = Establishment.objects.values()
+        # Adicionar um campo custumizado para a distância do usuário e o estabelecimento
         data = [{'name': x['name'], 'distance': self.haversine(lat, lon, x['latitude'], x['longitude'])}
                 for x in
                 establishment_list]
+        # Ordernar estabelecimentos pela menor a maior distância do usuário
         data.sort(key=lambda x: x['distance'])
         return Response(data)
